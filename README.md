@@ -1,4 +1,5 @@
 # scoper 
+[![Go Report Card](https://goreportcard.com/report/github.com/Mirabis/scoper)]
 
 Small, fast, simple tool for cleaning other tool output (IPs, URLs, hostnames) to only in-scope IPs
 
@@ -16,8 +17,12 @@ go get github.com/mirabis/scoper
 The most basic usage is to simply pipe a list of hosts, ips or urls into the tool, for example:
 
 ```sh
-mirabis~$ cat osint-domains-and-ips.txt | scoper -c scope.txt
-STDOUT will only contain ip\'s in-scope or hosts/urls that resolve to ip\'s in scope
+mirabis~$ cat osint-domains-and-ips.txt | scoper -c scope.txt -v
+20.contoso.com, resolved to 13.145.37.129 ([13.145.37.129]) which is within scope of 13.145.37.0/24
+20.contoso.info, resolved to 13.145.37.129 ([13.145.37.129]) which is within scope of 13.145.37.0/24
+20.contoso.nl, resolved to 13.145.37.129 ([13.145.37.129]) which is within scope of 13.145.37.0/24
+20.contoso.nl, resolved to 13.145.37.129 ([13.145.37.129]) which is within scope of 13.145.37.0/24
+20.contoso.nl, resolved to 13.145.37.129 ([13.145.37.129,13.145.37.137]) which is within scope of 13.145.37.0/24
 ...
 ```
 

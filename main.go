@@ -15,7 +15,7 @@ import (
 var scopeSubnets []*net.IPNet
 
 var opts struct {
-	CIDRS   string `short:"c" long:"cidrs" description:"CIDRS to match with, line separated"`
+	CIDRS   string `short:"c" long:"cidrs" required:"true" description:"CIDRS to match with, line separated"`
 	Threads int    `short:"t" long:"threads" default:"20" description:"Number of concurrent threads"`
 	Verbose bool   `short:"v" long:"verbose" description:"Turns on verbose logging (shows the scope and resolved IP(s))"`
 }
@@ -32,11 +32,20 @@ func main() {
 	}
 	// Get Scope File's once STDIN
 	if opts.CIDRS != "" {
-		file, _ := os.Open(opts.CIDRS)
-		scanner := bufio.NewScanner(bufio.NewReader(file))
+		file, err := os.Open(opts.CIDRS)
+		scanner := bufio.NewScanner(file)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "ERR: could not load CIDR file please try again", err)
+			os.Exit(1)
+		}
 		for scanner.Scan() {
-			_, subnet, _ := net.ParseCIDR(scanner.Text())
-			scopeSubnets = append(scopeSubnets, subnet)
+			r := scanner.Text()
+			_, subnet, err := net.ParseCIDR(r)
+			if err != nil {
+				scopeSubnets = append(scopeSubnets, subnet)
+			} else {
+				fmt.Fprintln(os.Stderr, "ERR: Error parsing", r, "with fault", err)
+			}
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "ERR: reading cidrs failed:", err)
@@ -68,7 +77,7 @@ func main() {
 }
 
 func doWork(work chan string, wg *sync.WaitGroup) {
-	defer wg.Done()
+	defer wg.Done() // done after we exit this func
 	//for each item to check scope
 	for toScope := range work {
 		procesInput(toScope, nil)
@@ -84,7 +93,7 @@ func procesInput(input string, override []*net.IPNet) bool {
 		for _, scope := range scopeSubnets {
 			if scope.Contains(ip) {
 				if opts.Verbose == true {
-					fmt.Printf("%s, is within scope of %s", input, scope)
+					fmt.Printf("%s, is within scope of %s\n", input, scope)
 				} else {
 					fmt.Println(input)
 				}
@@ -96,18 +105,29 @@ func procesInput(input string, override []*net.IPNet) bool {
 		var err error
 		if valid.IsDNSName(input) {
 			ips, err = net.LookupIP(input)
-
+			if err != nil {
+				if opts.Verbose {
+					fmt.Fprintln(os.Stderr, "ERR: identified DNSName but couldn't parse IP's without error", err)
+				}
+				return false
+			}
 		} else if valid.IsURL(input) {
 			if u, _ := url.Parse(input); u != nil {
 				ips, err = net.LookupIP(u.Hostname())
+				if err != nil {
+					if opts.Verbose {
+						fmt.Fprintln(os.Stderr, "ERR: identified URL but couldn't parse IP's without error", err)
+					}
+					return false
+				}
 			}
 		}
-		if err == nil || ips != nil {
+		if ips != nil {
 			for _, ip := range ips {
 				for _, scope := range scopeSubnets {
 					if scope.Contains(ip) {
 						if opts.Verbose {
-							fmt.Printf("%s, resolved to %s (%v) which is within scope of %s", input, ip, ips, scope)
+							fmt.Printf("%s, resolved to %s (%v) which is within scope of %s\n", input, ip, ips, scope)
 						} else {
 							fmt.Println(input)
 						}
