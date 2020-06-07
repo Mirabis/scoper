@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	valid "github.com/asaskevich/govalidator"
-	flags "github.com/jessevdk/go-flags"
+	"github.com/jessevdk/go-flags"
 )
 
 var scopeSubnets []*net.IPNet
@@ -21,13 +21,8 @@ var opts struct {
 }
 
 func main() {
-	// get Arguments
-	_, err := flags.ParseArgs(&opts, os.Args)
+	_, err := flags.Parse(&opts)
 	if err != nil {
-		flags.WroteHelp(err)
-		panic(err)
-	} else if opts.CIDRS == "" {
-		fmt.Println("Scope is required in form of --cidrs (-c)")
 		os.Exit(1)
 	}
 	// Get Scope File's once STDIN

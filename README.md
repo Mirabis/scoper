@@ -1,5 +1,8 @@
+[![Release](https://img.shields.io/github/release/mirabis/scoper.svg)](https://github.com/mirabis/scoper/releases)
+[![Action Status](https://github.com/Mirabis/scoper/workflows/Release%20with%20goreleaser/badge.svg)](https://github.com/mirabis/scoper/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Mirabis/scoper)](https://goreportcard.com/report/github.com/Mirabis/scoper)
+
 # scoper 
-[![Go Report Card](https://goreportcard.com/report/github.com/Mirabis/scoper)]
 
 Small, fast, simple tool for cleaning other tool output (IPs, URLs, hostnames) to only in-scope IPs
 
