@@ -16,7 +16,8 @@ var scopeSubnets []*net.IPNet
 
 var opts struct {
 	CIDRS   string `short:"c" long:"cidrs" description:"CIDRS to match with, line separated"`
-	Threads int    `short:"t" long:"threads" default:"40" description:"Number of concurrent threads"`
+	Threads int    `short:"t" long:"threads" default:"20" description:"Number of concurrent threads"`
+	Verbose bool   `short:"v" long:"verbose" description:"Turns on verbose logging (shows the scope and resolved IP(s))"`
 }
 
 func main() {
@@ -36,6 +37,9 @@ func main() {
 		for scanner.Scan() {
 			_, subnet, _ := net.ParseCIDR(scanner.Text())
 			scopeSubnets = append(scopeSubnets, subnet)
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "ERR: reading cidrs failed:", err)
 		}
 		file.Close()
 	}
@@ -79,7 +83,11 @@ func procesInput(input string, override []*net.IPNet) bool {
 	if ip := net.ParseIP(input); ip != nil {
 		for _, scope := range scopeSubnets {
 			if scope.Contains(ip) {
-				println(input)
+				if opts.Verbose == true {
+					fmt.Printf("%s, is within scope of %s", input, scope)
+				} else {
+					fmt.Println(input)
+				}
 				return true
 			}
 		}
@@ -94,11 +102,15 @@ func procesInput(input string, override []*net.IPNet) bool {
 				ips, err = net.LookupIP(u.Hostname())
 			}
 		}
-		if err == nil {
+		if err == nil || ips != nil {
 			for _, ip := range ips {
 				for _, scope := range scopeSubnets {
 					if scope.Contains(ip) {
-						println(input)
+						if opts.Verbose {
+							fmt.Printf("%s, resolved to %s (%v) which is within scope of %s", input, ip, ips, scope)
+						} else {
+							fmt.Println(input)
+						}
 						return true
 					}
 				}
